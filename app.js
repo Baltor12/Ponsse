@@ -32,6 +32,52 @@ var bodyParser = require('body-parser');
 
 // configuration ===============================================================
 
+
+var options_mongoDB = {
+    db: { native_parser: true },
+    server: { poolSize: 5 },
+    replset: { rs_name: 'myReplicaSetName' },
+    user: 'admin',
+    pass: 'admin'
+};
+
+var mongoURL = 'mongodb://<admin>:<admin>@apollo.modulusmongo.net:27017/eveNe2gy';
+
+var myOwnDb = mongoose.connect(mongoURL, options_mongoDB);
+
+var personSchema = new mongoose.Schema({
+  id: { type: String }
+, name: String
+, startTime: Number
+, endTime: Number
+, stationId: String
+, productId: String
+, projectId: String
+, orderId: String
+
+});
+
+
+var Person = mongoose.model('Person', personSchema);
+
+
+//FINDING A PERSON
+Person.find({ id: '1' }, function(err, persons) {
+  if (err) return console.error(err);
+
+          persons.forEach(function(doc) {
+            console.log("Persons");
+            //console.dir(doc.toObject().name);
+            console.dir(doc.toObject());          
+	    });
+  
+});
+
+
+
+
+
+
 /*var options = {
     db: { native_parser: true },
     server: { poolSize: 5 },
@@ -88,8 +134,8 @@ const https = require('https');
 https.get('https://ih-wizdom-api:WgWq22Rq72UsW@api.trelab.fi/2/smartTag/991', (res) => {
 
   res.on('data', (d) => {
-    process.stdout.write(d);
-	console.log(d);
+    	//process.stdout.write(d);
+	//console.log(d);
   });
 
 }).on('error', (e) => {
@@ -114,6 +160,5 @@ server.listen(port);
 console.log('The magic happens on port ' + port);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-
 
 

@@ -23,6 +23,18 @@ var bodyParser = require('body-parser');
 //var checkPersonName = {"997":"USER1", "988":"USER2", "989":"USER3", "991":"USER4", "993":"USER5", "990":"USER6", "981":"USER7", "977":"USER8", "992":"USER9", "976":"USER10", "984":"USER11" };
 
 
+//L2 => 379
+//L7 => 380
+//L9 => 390
+var L2 = "379";
+var L7 = "380";
+var L9 = "390";
+
+var THE_ORDER_NUMBER = {"379":"NONE", "380":"NONE", "390":"NONE"};
+var THE_PROJECT_NUMBER = {"379":"NONE", "380":"NONE", "390":"NONE"};
+var THE_MODEL_NUMBER = {"379":"NONE", "380":"NONE", "390":"NONE"};
+
+
 var checkPersonStatus = {"997":"NONE", "988":"NONE", "989":"NONE", "991":"NONE"};
 
 var checkPersonName = {"997":"USER1", "988":"USER2", "989":"USER3", "991":"USER4"};
@@ -96,13 +108,18 @@ PersonLocation.find({}, function(err, persons) {
 
 	    });
 
-console.log("UPDATED USER LOCATIONS");
-console.log(checkPersonStatus);
-  
+//console.log("UPDATED USER LOCATIONS");
+//console.log(checkPersonStatus);
+
+//console.log("=======");
+
 });
 
 
 
+doCheckProductData("L2");
+doCheckProductData("L7");
+doCheckProductData("L9");
 
 //FIND AND MODIFY SPECIFIC USER LOCATION.
 
@@ -226,7 +243,7 @@ const https = require('https');
 
 function doCheckPosition(inputTagId) {
 
-console.log("------------------------");
+//console.log("------------------------");
 
 	var smartTagToCheck = 'https://ih-wizdom-api:WgWq22Rq72UsW@api.trelab.fi/2/smartTag/'+inputTagId;
 
@@ -243,6 +260,17 @@ console.log("------------------------");
 			var currentPosition = resData.gatewayId;
 			var currentStatus = resData.status;
 			var currDate = new Date().getTime();
+
+			var currOrderId = THE_ORDER_NUMBER[currentPosition];
+			var currProjectId = THE_PROJECT_NUMBER[currentPosition];
+			var currProductId = THE_MODEL_NUMBER[currentPosition];
+/*
+console.log("////////////////////////////////////");
+console.log(currOrderId);
+console.log(currProjectId);
+console.log(currProductId);
+console.log("////////////////////////////////////");
+*/
 
 		console.log(previousPosition);
 		console.log(currentPosition);
@@ -306,9 +334,9 @@ console.log("------------------------");
 						, name: personName
 						, startTime: currDate
 						, stationId: currentPosition
-						, productId: '102123'
-						, projectId: '878'
-						, orderId: '123'
+						, productId: currProductId
+						, projectId: currProjectId
+						, orderId: currOrderId
 
 						});
 
@@ -346,16 +374,16 @@ console.log("------------------------");
 	
 					//ADDED.
 
-					var addNewPerson = new Person({
-					  id: resData.smartTagId
-					, name: personName
-					, startTime: currDate
-					, stationId: currentPosition
-					, productId: '102123'
-					, projectId: '878'
-					, orderId: '123'
+						var addNewPerson = new Person({
+						  id: resData.smartTagId
+						, name: personName
+						, startTime: currDate
+						, stationId: currentPosition
+						, productId: currProductId
+						, projectId: currProjectId
+						, orderId: currOrderId
 
-					});
+						});
 
 					addNewPerson.save(function(err, thor) {
 					  if (err) return console.error(err);
@@ -390,8 +418,12 @@ setInterval(function(){ doCheckPosition(991); }, 10000);
 
 //////////////////////////////POST REQUEST TO GET THE ORDERID AND PROJECTID.
 
-/*
+function doCheckProductData(inputWorkStation) {
+
+
 //L2,L7,L9
+//var searchMatch = "L7";
+var searchMatch = inputWorkStation;
 var postData = {
     "fields": [],
     "conditions": [
@@ -403,7 +435,7 @@ var postData = {
         {
             "field": "work_center_no",
             "operator": "=",
-            "match": "L7"
+            "match": searchMatch
         }
     ],
     "limit": 500,
@@ -430,17 +462,52 @@ var postreq = http.request(options, function (response) {
     response.setEncoding('utf8');
     response.on('data', (d) => {
         //console.log(d.toString());
-        var jsonObject = JSON.parse(d);
-        console.log(jsonObject);
+        //var jsonObject = JSON.parse(d);
+	var jsonObject;
+	var is_JSON = true;
+	try {
+	    jsonObject = JSON.parse(d);
+	} catch (e) {
+	    // not json
+		is_JSON = false;
+	}
+
+        //console.log(jsonObject);
+var checkGateId;
+
+if(is_JSON){
+
+if(searchMatch == "L7"){
+checkGateId = "380";
+}
+else if(searchMatch == "L2"){
+checkGateId = "379";
+}
+else{
+checkGateId = "390";
+}
+
+   THE_ORDER_NUMBER[checkGateId] = jsonObject.results[0].order_no;
+   THE_PROJECT_NUMBER[checkGateId] = jsonObject.results[0].proj;
+   THE_MODEL_NUMBER[checkGateId] = jsonObject.results[0].model;
+
+}
+
+
+
     });});
+
 postreq.write(postBody);
 postreq.end();
 
-*/
+
+}
 
 //////////////////////////////POST REQUEST TO GET THE ORDERID AND PROJECTID.
 
-
+setInterval(function(){ doCheckProductData("L7"); }, 200000);
+setInterval(function(){ doCheckProductData("L2"); }, 200000);
+setInterval(function(){ doCheckProductData("L9"); }, 200000);
 
 
 

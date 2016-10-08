@@ -18,9 +18,14 @@ var bodyParser = require('body-parser');
 
 
 
-var checkPersonStatus = {"997":"NONE", "988":"NONE", "989":"NONE", "991":"NONE", "993":"NONE", "990":"NONE", "981":"NONE", "977":"NONE", "992":"NONE", "976":"NONE", "984":"NONE" };
+//var checkPersonStatus = {"997":"NONE", "988":"NONE", "989":"NONE", "991":"NONE", "993":"NONE", "990":"NONE", "981":"NONE", "977":"NONE", "992":"NONE", "976":"NONE", "984":"NONE" };
 
-var checkPersonName = {"997":"USER1", "988":"USER2", "989":"USER3", "991":"USER4", "993":"USER5", "990":"USER6", "981":"USER7", "977":"USER8", "992":"USER9", "976":"USER10", "984":"USER11" };
+//var checkPersonName = {"997":"USER1", "988":"USER2", "989":"USER3", "991":"USER4", "993":"USER5", "990":"USER6", "981":"USER7", "977":"USER8", "992":"USER9", "976":"USER10", "984":"USER11" };
+
+
+var checkPersonStatus = {"997":"NONE", "988":"NONE", "989":"NONE", "991":"NONE"};
+
+var checkPersonName = {"997":"USER1", "988":"USER2", "989":"USER3", "991":"USER4"};
 
 //console.log(checkPersonStatus);
 
@@ -33,9 +38,11 @@ var options_mongoDB = {
 };
 
 var mongoURL = 'mongodb://<admin>:<admin>@apollo.modulusmongo.net:27017/eveNe2gy';
-
+//CONNECT.
 var myOwnDb = mongoose.connect(mongoURL, options_mongoDB);
+//CREATE THE REQUIRED SCHEMAS.
 
+//PERSON SCHEMA.
 var personSchema = new mongoose.Schema({
   id: { type: String }
 , name: String
@@ -48,8 +55,81 @@ var personSchema = new mongoose.Schema({
 
 });
 
-
 var Person = mongoose.model('Person', personSchema);
+
+
+//PERSON LOCATION SCHEMA. => To make things persistent.
+
+var personPreviousLocation = new mongoose.Schema({
+  id: { type: String }
+, name: String
+, stationId: String
+
+});
+
+var PersonLocation = mongoose.model('PersonLocation', personPreviousLocation);
+
+//FIND AND DELETE ALL USER LOCATIONS.
+/*
+PersonLocation.find({}, function(err, persons) {
+  if (err) return console.error(err);
+
+          persons.forEach(function(doc) {
+
+	        console.log(doc.toObject());    
+		//doc.remove();
+	    });
+  
+});
+*/
+
+//FIND AND UPDATE ALL WHEN SERVER RESTARTS.
+
+PersonLocation.find({}, function(err, persons) {
+  if (err) return console.error(err);
+
+          persons.forEach(function(doc) {
+		
+		var currObject = doc.toObject();
+		console.log(currObject.stationId);
+		checkPersonStatus[currObject.id] = currObject.stationId;
+
+	    });
+
+console.log("UPDATED USER LOCATIONS");
+console.log(checkPersonStatus);
+  
+});
+
+
+
+
+//FIND AND MODIFY SPECIFIC USER LOCATION.
+
+/*
+PersonLocation.find({ id: '989' }, function(err, persons) {
+  if (err) return console.error(err);
+
+          persons.forEach(function(doc) {
+
+            console.log(doc.toObject());    
+		var currObj = doc.toObject();
+
+		PersonLocation.update(currObj, { stationId: 'NONE' }, function (err, raw) {
+		  if (err) return handleError(err);
+		  console.log('UPDATED:  ', raw);
+		});
+
+      
+	    });
+  
+});
+
+*/
+
+
+
+
 
 //ADD NEW PERSON.
 /*
@@ -144,9 +224,13 @@ const https = require('https');
 //setInterval(function(){ alert("Hello"); }, 3000);
 
 
-function doCheckPosition() {
+function doCheckPosition(inputTagId) {
 
-	https.get('https://ih-wizdom-api:WgWq22Rq72UsW@api.trelab.fi/2/smartTag/991', (res) => {
+console.log("------------------------");
+
+	var smartTagToCheck = 'https://ih-wizdom-api:WgWq22Rq72UsW@api.trelab.fi/2/smartTag/'+inputTagId;
+
+	https.get(smartTagToCheck, (res) => {
 
 			res.setEncoding('utf8');
 
@@ -194,6 +278,25 @@ function doCheckPosition() {
 				console.log("Position Changed TO NEW WORKSTATION.");
 				checkPersonStatus[resData.smartTagId] = currentPosition;	//Also update the array for future purposes.
 				//ADD TO THE DB. :)
+			//MAKE SURE TO UPDATE THE LOCATION IN DB AS WELL.
+			PersonLocation.find({ id: resData.smartTagId }, function(err, persons) {
+			  if (err) return console.error(err);
+
+				  persons.forEach(function(doc) {
+
+					var currObj = doc.toObject();
+
+					PersonLocation.update(currObj, { stationId: currentPosition }, function (err, raw) {
+					  if (err) return handleError(err);
+					  console.log('UPDATED PERSON IN DB:  ', raw);
+					});
+
+			      
+				    });
+			  
+			});
+			//USER LOCATION HAS NOW BEEN MODIFIED AS WELL.
+
 
 				if(previousPosition == "NONE"){	
 					//DONOT MODIFY THE NONE POSITION, as it does not exists, simply add one entry to DB.			
@@ -279,146 +382,63 @@ function doCheckPosition() {
 }
 
 
-//setInterval(function(){ doCheckPosition(); }, 10000);
+setInterval(function(){ doCheckPosition(997); }, 10000);
+setInterval(function(){ doCheckPosition(988); }, 10000);
+setInterval(function(){ doCheckPosition(989); }, 10000);
+setInterval(function(){ doCheckPosition(991); }, 10000);
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////AJAX POLLING.
+
+//////////////////////////////POST REQUEST TO GET THE ORDERID AND PROJECTID.
+
 /*
-https.get('https://ih-wizdom-api:WgWq22Rq72UsW@api.trelab.fi/2/smartTag/991', (res) => {
+//L2,L7,L9
+var postData = {
+    "fields": [],
+    "conditions": [
+        {
+            "field": "operation_status",
+            "operator": "=",
+            "match": "1"
+        },
+        {
+            "field": "work_center_no",
+            "operator": "=",
+            "match": "L7"
+        }
+    ],
+    "limit": 500,
+    "offset": 0
+};
 
-	res.setEncoding('utf8');
+var postBody = JSON.stringify(postData);
+//init your options object after you call querystring.stringify because you  need
+// the return string for the 'content length' header
 
-  res.on('data', (d) => {
+var options = {
+    host: 'industryhack-ponsse.azurewebsites.net',
+    port: '80',
+    path: '/api/v1/module/pon_prod_orders_on_stage',
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': postBody.length,
+        'x-api-key': 'Hxa4cY02myr+g0SBKtlWQVoYcVv0pje+7+cUEAmU1vs='
+    }
+};
 
-	var resData = JSON.parse(d);
-	var personId = resData.smartTagId;
-	var personName = checkPersonName[resData.smartTagId];
-	var previousPosition = checkPersonStatus[resData.smartTagId];
-	var currentPosition = resData.gatewayId;
-	var currentStatus = resData.status;
-	var currDate = new Date().getTime();
-
-console.log(previousPosition);
-console.log(currentPosition);
-
-	if(previousPosition == currentPosition){
-		console.log("Same Position.");	//DO NOTHING. :)
-	}
-	else if(currentStatus == "NOT_SEEN" || currentStatus == "CONNECTION_LOST"){
-
-		console.log("Position Changed AND NOT IN RANGE OF ANY OTHER SENSOR");
-		//SIMPLY MODIFY THE CHANGE, NO NEED TO ENTER A NEW ENTRY.
-
-		Person.find({ id: personId, endTime: {$exists: false} }, function(err, persons) {
-		  if (err) return console.error(err);
-
-			  persons.forEach(function(doc) {
-   
-				var currObj = doc.toObject();
-
-				Person.update(currObj, { endTime: currDate }, function (err, raw) {
-				  if (err) return handleError(err);
-				  console.log('Updated Successfully.');
-				});
-
-		      
-			    });
-		  
-		});
-
-
-	}
-	else{
-		console.log("Position Changed TO NEW WORKSTATION.");
-		checkPersonStatus[resData.smartTagId] = currentPosition;	//Also update the array for future purposes.
-		//ADD TO THE DB. :)
-		
-		if(previousPosition == "NONE"){	
-			//DONOT MODIFY THE NONE POSITION, as it does not exists, simply add one entry to DB.			
-
-				var addNewPerson = new Person({
-				  id: resData.smartTagId
-				, name: personName
-				, startTime: currDate
-				, stationId: currentPosition
-				, productId: '102123'
-				, projectId: '878'
-				, orderId: '123'
-
-				});
-
-				addNewPerson.save(function(err, thor) {
-				  if (err) return console.error(err);
-
-				  console.dir("Person SAVED.");
-				});
-			
-
-		}
-
-		else {	
-			//SO MODIFY PREVIOUS ENTRY AND ADD THE NEW ONE.
-			//DONOT MODIFY THE NONE POSITION, as it does not exists.
-
-		//MODIFIED.
-
-		Person.find({ id: personId, endTime: {$exists: false} }, function(err, persons) {
-		  if (err) return console.error(err);
-
-			  persons.forEach(function(doc) {
-   
-				var currObj = doc.toObject();
-
-				Person.update(currObj, { endTime: currDate }, function (err, raw) {
-				  if (err) return handleError(err);
-				  console.log('Updated Successfully.');
-				});
-
-		      
-			    });
-		  
-		});
-			
-			//ADDED.
-
-			var addNewPerson = new Person({
-			  id: resData.smartTagId
-			, name: personName
-			, startTime: currDate
-			, stationId: currentPosition
-			, productId: '102123'
-			, projectId: '878'
-			, orderId: '123'
-
-			});
-
-			addNewPerson.save(function(err, thor) {
-			  if (err) return console.error(err);
-
-			  console.dir("Person SAVED.");
-			});
-
-
-		}
-			
-
-	}	
-
-    	//process.stdout.write(d);
-	//console.log(d);
-  });
-
-}).on('error', (e) => {
-  console.error(e);
-});
+var postreq = http.request(options, function (response) {
+    response.setEncoding('utf8');
+    response.on('data', (d) => {
+        //console.log(d.toString());
+        var jsonObject = JSON.parse(d);
+        console.log(jsonObject);
+    });});
+postreq.write(postBody);
+postreq.end();
 
 */
-///////////////////////////////////////////////////////////////////////////////////////////////////////AJAX POLLING.
 
-
-
-
-
-
+//////////////////////////////POST REQUEST TO GET THE ORDERID AND PROJECTID.
 
 
 

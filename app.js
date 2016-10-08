@@ -17,15 +17,6 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
 
-//:::::::::::::::::::::::::::::::::::Balaji:::::::::::::::::::::::::::::::::::::
-
-// Variables ===================================================================
-
-
-
-//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-// configuration ===============================================================
 
 var checkPersonStatus = {"997":"NONE", "988":"NONE", "989":"NONE", "991":"NONE", "993":"NONE", "990":"NONE", "981":"NONE", "977":"NONE", "992":"NONE", "976":"NONE", "984":"NONE" };
 
@@ -82,6 +73,23 @@ var Person = mongoose.model('Person', personSchema);
 
 
 //FINDING A PERSON
+
+//FIND AND DELETE ALL.
+/*
+Person.find({}, function(err, persons) {
+  if (err) return console.error(err);
+
+          persons.forEach(function(doc) {
+
+	        console.log(doc.toObject());    
+		//doc.remove();
+	    });
+  
+});
+*/
+
+
+//FIND AND MODIFY SPECIFIC.
 /*
 Person.find({ id: '2', endTime: {$exists: false} }, function(err, persons) {
   if (err) return console.error(err);
@@ -133,6 +141,148 @@ require('./app/routes.js')(app, passport); // load our routes and pass in our ap
 
 const https = require('https');
 
+//setInterval(function(){ alert("Hello"); }, 3000);
+
+
+function doCheckPosition() {
+
+	https.get('https://ih-wizdom-api:WgWq22Rq72UsW@api.trelab.fi/2/smartTag/991', (res) => {
+
+			res.setEncoding('utf8');
+
+		  res.on('data', (d) => {
+
+			var resData = JSON.parse(d);
+			var personId = resData.smartTagId;
+			var personName = checkPersonName[resData.smartTagId];
+			var previousPosition = checkPersonStatus[resData.smartTagId];
+			var currentPosition = resData.gatewayId;
+			var currentStatus = resData.status;
+			var currDate = new Date().getTime();
+
+		console.log(previousPosition);
+		console.log(currentPosition);
+
+			if(previousPosition == currentPosition){
+				console.log("Same Position.");	//DO NOTHING. :)
+			}
+			else if(currentStatus == "NOT_SEEN" || currentStatus == "CONNECTION_LOST"){
+
+				console.log("Position Changed AND NOT IN RANGE OF ANY OTHER SENSOR");
+				//SIMPLY MODIFY THE CHANGE, NO NEED TO ENTER A NEW ENTRY.
+
+				Person.find({ id: personId, endTime: {$exists: false} }, function(err, persons) {
+				  if (err) return console.error(err);
+
+					  persons.forEach(function(doc) {
+		   
+						var currObj = doc.toObject();
+
+						Person.update(currObj, { endTime: currDate }, function (err, raw) {
+						  if (err) return handleError(err);
+						  console.log('Updated Successfully.');
+						});
+
+				      
+					    });
+				  
+				});
+
+
+			}
+			else{
+				console.log("Position Changed TO NEW WORKSTATION.");
+				checkPersonStatus[resData.smartTagId] = currentPosition;	//Also update the array for future purposes.
+				//ADD TO THE DB. :)
+
+				if(previousPosition == "NONE"){	
+					//DONOT MODIFY THE NONE POSITION, as it does not exists, simply add one entry to DB.			
+
+						var addNewPerson = new Person({
+						  id: resData.smartTagId
+						, name: personName
+						, startTime: currDate
+						, stationId: currentPosition
+						, productId: '102123'
+						, projectId: '878'
+						, orderId: '123'
+
+						});
+
+						addNewPerson.save(function(err, thor) {
+						  if (err) return console.error(err);
+
+						  console.dir("Person SAVED.");
+						});
+	
+
+				}
+
+				else {	
+					//SO MODIFY PREVIOUS ENTRY AND ADD THE NEW ONE.
+					//DONOT MODIFY THE NONE POSITION, as it does not exists.
+
+				//MODIFIED.
+
+				Person.find({ id: personId, endTime: {$exists: false} }, function(err, persons) {
+				  if (err) return console.error(err);
+
+					  persons.forEach(function(doc) {
+		   
+						var currObj = doc.toObject();
+
+						Person.update(currObj, { endTime: currDate }, function (err, raw) {
+						  if (err) return handleError(err);
+						  console.log('Updated Successfully.');
+						});
+
+				      
+					    });
+				  
+				});
+	
+					//ADDED.
+
+					var addNewPerson = new Person({
+					  id: resData.smartTagId
+					, name: personName
+					, startTime: currDate
+					, stationId: currentPosition
+					, productId: '102123'
+					, projectId: '878'
+					, orderId: '123'
+
+					});
+
+					addNewPerson.save(function(err, thor) {
+					  if (err) return console.error(err);
+
+					  console.dir("Person SAVED.");
+					});
+
+
+				}
+	
+
+			}	
+
+		    	//process.stdout.write(d);
+			//console.log(d);
+		  });
+
+		}).on('error', (e) => {
+		  console.error(e);
+		});
+
+
+
+}
+
+
+//setInterval(function(){ doCheckPosition(); }, 10000);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////AJAX POLLING.
+/*
 https.get('https://ih-wizdom-api:WgWq22Rq72UsW@api.trelab.fi/2/smartTag/991', (res) => {
 
 	res.setEncoding('utf8');
@@ -248,19 +398,10 @@ console.log(currentPosition);
 			});
 
 
-
-			
-
-
-
 		}
 			
 
-
-
 	}	
-
-
 
     	//process.stdout.write(d);
 	//console.log(d);
@@ -269,6 +410,17 @@ console.log(currentPosition);
 }).on('error', (e) => {
   console.error(e);
 });
+
+*/
+///////////////////////////////////////////////////////////////////////////////////////////////////////AJAX POLLING.
+
+
+
+
+
+
+
+
 
 
 

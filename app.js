@@ -82,6 +82,7 @@ var personPreviousLocation = new mongoose.Schema({
 var PersonLocation = mongoose.model('PersonLocation', personPreviousLocation);
 
 //FIND AND DELETE ALL USER LOCATIONS.
+
 /*
 PersonLocation.find({}, function(err, persons) {
   if (err) return console.error(err);
@@ -94,6 +95,7 @@ PersonLocation.find({}, function(err, persons) {
   
 });
 */
+
 
 //FIND AND UPDATE ALL WHEN SERVER RESTARTS.
 
@@ -117,9 +119,10 @@ PersonLocation.find({}, function(err, persons) {
 
 
 
-doCheckProductData("L2");
-doCheckProductData("L7");
-doCheckProductData("L9");
+//doCheckProductData("L2");
+//doCheckProductData("L7");
+//doCheckProductData("L9");
+
 
 //FIND AND MODIFY SPECIFIC USER LOCATION.
 
@@ -172,7 +175,7 @@ PersonLocation.find({ id: '989' }, function(err, persons) {
 //FINDING A PERSON
 
 //FIND AND DELETE ALL.
-/*
+
 Person.find({}, function(err, persons) {
   if (err) return console.error(err);
 
@@ -183,7 +186,7 @@ Person.find({}, function(err, persons) {
 	    });
   
 });
-*/
+
 
 
 //FIND AND MODIFY SPECIFIC.
@@ -278,7 +281,7 @@ console.log("////////////////////////////////////");
 			if(previousPosition == currentPosition){
 				console.log("Same Position.");	//DO NOTHING. :)
 			}
-			else if(currentStatus == "NOT_SEEN" || currentStatus == "CONNECTION_LOST"){
+			else if(currentStatus == "NOT_SEEN" || currentStatus == "CONNECTION_LOST" || currentStatus == "FAR"){
 
 				console.log("Position Changed AND NOT IN RANGE OF ANY OTHER SENSOR");
 				//SIMPLY MODIFY THE CHANGE, NO NEED TO ENTER A NEW ENTRY.
@@ -409,12 +412,19 @@ console.log("////////////////////////////////////");
 
 }
 
+/*
+setInterval(function(){ doCheckPosition(997); }, 5000);
+setInterval(function(){ doCheckPosition(988); }, 5000);
+setInterval(function(){ doCheckPosition(989); }, 5000);
+setInterval(function(){ doCheckPosition(991); }, 5000);
+*/
 
+/*
 setInterval(function(){ doCheckPosition(997); }, 10000);
 setInterval(function(){ doCheckPosition(988); }, 10000);
 setInterval(function(){ doCheckPosition(989); }, 10000);
 setInterval(function(){ doCheckPosition(991); }, 10000);
-
+*/
 
 //////////////////////////////POST REQUEST TO GET THE ORDERID AND PROJECTID.
 
@@ -505,10 +515,11 @@ postreq.end();
 
 //////////////////////////////POST REQUEST TO GET THE ORDERID AND PROJECTID.
 
+/*
 setInterval(function(){ doCheckProductData("L7"); }, 200000);
 setInterval(function(){ doCheckProductData("L2"); }, 200000);
 setInterval(function(){ doCheckProductData("L9"); }, 200000);
-
+*/
 
 
 //////////////////////////////////////////////////////////////////////////////////move the item being added.

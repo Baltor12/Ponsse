@@ -16,7 +16,7 @@ var morgan = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
-
+var io = require("socket.io").listen(server);
 
 //var checkPersonStatus = {"997":"NONE", "988":"NONE", "989":"NONE", "991":"NONE", "993":"NONE", "990":"NONE", "981":"NONE", "977":"NONE", "992":"NONE", "976":"NONE", "984":"NONE" };
 
@@ -119,9 +119,9 @@ PersonLocation.find({}, function(err, persons) {
 
 
 
-//doCheckProductData("L2");
-//doCheckProductData("L7");
-//doCheckProductData("L9");
+doCheckProductData("L2");
+doCheckProductData("L7");
+doCheckProductData("L9");
 
 
 //FIND AND MODIFY SPECIFIC USER LOCATION.
@@ -209,7 +209,7 @@ Person.find({ id: '2', endTime: {$exists: false} }, function(err, persons) {
 	    });
   
 });
-
+io = require("socket.io").listen(server)
 */
 
 
@@ -292,6 +292,20 @@ console.log("////////////////////////////////////");
 					  persons.forEach(function(doc) {
 		   
 						var currObj = doc.toObject();
+						//Also updated the client side about the changes.
+						var sendDataClient = {
+							id:currObj.id
+							, name: currObj.name
+							, startTime: currObj.startTime
+							, endTime: currDate
+							, stationId: currObj.stationId
+							, productId: currObj.productId
+							, projectId: currObj.projectId
+							, orderId: currObj.orderId
+	
+						};
+
+						io.sockets.emit('personchanged',sendDataClient);
 
 						Person.update(currObj, { endTime: currDate }, function (err, raw) {
 						  if (err) return handleError(err);
@@ -316,6 +330,20 @@ console.log("////////////////////////////////////");
 				  persons.forEach(function(doc) {
 
 					var currObj = doc.toObject();
+						//Also updated the client side about the changes.
+						var sendDataClient = {
+							id:currObj.id
+							, name: currObj.name
+							, startTime: currObj.startTime
+							, stationId: currentPosition
+							, productId: currObj.productId
+							, projectId: currObj.projectId
+							, orderId: currObj.orderId
+	
+						};
+
+						io.sockets.emit('personchanged',sendDataClient);
+
 
 					PersonLocation.update(currObj, { stationId: currentPosition }, function (err, raw) {
 					  if (err) return handleError(err);
@@ -343,6 +371,20 @@ console.log("////////////////////////////////////");
 
 						});
 
+						//Also updated the client side about the changes.
+						var sendDataClient = {
+							  id:resData.smartTagId
+							, name: personName
+							, startTime: currDate
+							, stationId: currentPosition
+							, productId: currProductId
+							, projectId: currProjectId
+							, orderId: currOrderId
+	
+						};
+
+						io.sockets.emit('personchanged',sendDataClient);
+
 						addNewPerson.save(function(err, thor) {
 						  if (err) return console.error(err);
 
@@ -364,6 +406,21 @@ console.log("////////////////////////////////////");
 					  persons.forEach(function(doc) {
 		   
 						var currObj = doc.toObject();
+
+						//Also updated the client side about the changes.
+						var sendDataClient = {
+							id:currObj.id
+							, name: currObj.name
+							, startTime: currObj.startTime
+							, endTime: currDate
+							, stationId: currentPosition
+							, productId: currObj.productId
+							, projectId: currObj.projectId
+							, orderId: currObj.orderId
+	
+						};
+
+						io.sockets.emit('personchanged',sendDataClient);
 
 						Person.update(currObj, { endTime: currDate }, function (err, raw) {
 						  if (err) return handleError(err);
@@ -387,6 +444,21 @@ console.log("////////////////////////////////////");
 						, orderId: currOrderId
 
 						});
+
+						//Also updated the client side about the changes.
+						var sendDataClient = {
+							id:resData.smartTagId
+							, name: personName
+							, startTime: currDate
+							, endTime: currDate
+							, stationId: currentPosition
+							, productId: currProductId
+							, projectId: currProjectId
+							, orderId: currOrderId
+	
+						};
+
+						io.sockets.emit('personchanged',sendDataClient);
 
 					addNewPerson.save(function(err, thor) {
 					  if (err) return console.error(err);
@@ -418,6 +490,34 @@ setInterval(function(){ doCheckPosition(988); }, 5000);
 setInterval(function(){ doCheckPosition(989); }, 5000);
 setInterval(function(){ doCheckPosition(991); }, 5000);
 */
+
+
+setInterval(function(){ 
+
+	doCheckPosition(997); 
+	
+}, 5000);
+
+setInterval(function(){ 
+	
+	doCheckPosition(988); 
+
+}, 5000);
+
+setInterval(function(){ 
+
+	doCheckPosition(989); 
+
+}, 5000);
+
+setInterval(function(){ 
+
+	doCheckPosition(991); 
+
+}, 5000);
+
+
+
 
 /*
 setInterval(function(){ doCheckPosition(997); }, 10000);
